@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予約カレンダー</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: "Helvetica Neue", Arial, sans-serif; padding: 20px; background-color: #f8f9fa; color: #333; }
+        h3 { text-align: center; color: #2c3e50; }
+        .container { max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input[type="date"] { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
+        #slots { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        .slot-btn { padding: 15px; border: 1px solid #00b900; border-radius: 8px; background: #fff; color: #00b900; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .slot-btn:hover { background: #00b900; color: #fff; }
+        .loading { text-align: center; color: #888; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h3>予約日を選択</h3>
+    <input type="date" id="datePicker" onchange="checkSlots()">
+    
+    <div id="slots">
+        </div>
+</div>
+
+<script>
+    // ★1. LINE Developersで取得した LIFF ID をここに入れる
+    const MY_LIFF_ID = "2009364776-YR9SsvM0"; 
+    // ★2. n8nのWebhook URL（本番用 Production URL）のドメイン部分を入れる
+    const N8N_BASE_URL = "https://tokawaka.app.n8n.cloud"; 
+
+    // LIFFの初期化
+    liff.init({ liffId: MY_LIFF_ID }).then(() => {
+        if (!liff.isLoggedIn()) {
+            liff.login();
+        }
+    }).catch((err) => {
+        console.error("LIFF初期化失敗", err);
+    });
+
+    // 空き枠を確認する関数
+    async function checkSlots() {
+        const date = document.getElementById('datePicker').value;
+        const slotContainer = document.getElementById('slots');
+        if (!date) return;
+
+        slotContainer.innerHTML = '<p class="loading">空き状況を確認中...</p>';
+
+        try {
+            // 先ほど作成した n8n の空き枠確認 Webhook を叩く
+            const response = await fetch(`${N8N_BASE_URL}/webhook/check-slots?date=${date}`);
+            const data = await response.json();
+
+            slotContainer.innerHTML = '';
+            if (!data.slots || data.slots.length === 0) {
+                slotContainer.innerHTML = '<p class="loading">あいにく満席です</p>';
+                return;
+            }
+
+            data.slots.forEach(slot => {
+                const btn = document.createElement('button');
+                btn.className = 'slot-btn';
+                btn.innerText = `${slot.time} (あと${slot.remaining}名)`;
+                btn.onclick = () => confirmBooking(date, slot.time);
+                slotContainer.appendChild(btn);
+            });
+        } catch (error) {
+            slotContainer.innerHTML = '<p class="loading">エラーが発生しました</p>';
+        }
+    }
+
+    // 予約を実行する関数
+    async function confirmBooking(date, time) {
+        if (!confirm(`${date} ${time} で予約を確定しますか？`)) return;
+
+        const profile = await liff.getProfile();
+
+        // 予約実行用の n8n Webhook (create-booking) を叩く
+        const response = await fetch(`${N8N_BASE_URL}/webhook/create-booking`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                date: date,
+                time: time,
+                name: profile.displayName,
+                userId: profile.userId
+            })
+        });
+
+        if (response.ok) {
+            alert('予約が完了しました！カレンダーをご確認ください。');
+            liff.closeWindow(); // LINEの画面を閉じる
+        } else {
+            alert('予約に失敗しました。時間をおいて再度お試しください。');
+        }
+    }
+</script>
+
+</body>
+</html>
