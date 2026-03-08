@@ -1,117 +1,8 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>予約カレンダー</title>
-
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
-<style>
-body{
-font-family:sans-serif;
-background:#f0f2f5;
-display:flex;
-justify-content:center;
-margin:0;
-}
-
-.container{
-width:100%;
-max-width:450px;
-background:white;
-padding:20px;
-min-height:100vh;
-box-sizing:border-box;
-}
-
-h3{
-text-align:center;
-}
-
-input[type="date"]{
-width:100%;
-padding:12px;
-margin-bottom:20px;
-border-radius:8px;
-border:1px solid #ddd;
-font-size:16px;
-}
-
-#slots{
-display:grid;
-gap:10px;
-}
-
-.slot-btn{
-padding:15px;
-border-radius:10px;
-border:2px solid #00B900;
-background:white;
-color:#00B900;
-font-size:16px;
-font-weight:bold;
-cursor:pointer;
-}
-
-.slot-btn:active{
-background:#00B900;
-color:white;
-}
-
-.loading{
-text-align:center;
-color:#888;
-}
-
-.error{
-background:#ffebee;
-color:#d32f2f;
-padding:10px;
-border-radius:8px;
-}
-</style>
-</head>
-
-<body>
-
-<div class="container">
-
-<h3>予約日を選択</h3>
-
-<input type="date" id="datePicker">
-
-<div id="slots"></div>
-
-</div>
-
-<script>
-
-const N8N_BASE_URL="https://tokawaka.app.n8n.cloud"
-const LIFF_ID="2009364776-YR9SsvM0"
-
-async function initLIFF(){
-
-await liff.init({liffId:LIFF_ID})
-
-if(!liff.isLoggedIn()){
-liff.login()
-}
-
-}
-
-initLIFF()
-
-document.getElementById("datePicker").addEventListener("change",loadSlots)
-
 async function loadSlots(e){
 
-const rawDate=e.target.value
+const date=e.target.value
 
-if(!rawDate) return
-
-// 日付を必ず YYYY-MM-DD に変換
-const date=new Date(rawDate).toISOString().split("T")[0]
+if(!date) return
 
 const slotsDiv=document.getElementById("slots")
 
@@ -121,20 +12,9 @@ try{
 
 const res=await fetch(`${N8N_BASE_URL}/webhook/availability?date=${date}`)
 
-if(!res.ok){
-throw new Error("サーバーエラー")
-}
-
 const data=await res.json()
 
 slotsDiv.innerHTML=""
-
-if(!data || data.length===0){
-
-slotsDiv.innerHTML="<p style='text-align:center'>この日は空きがありません</p>"
-return
-
-}
 
 data.forEach(slot=>{
 
@@ -152,64 +32,8 @@ slotsDiv.appendChild(btn)
 
 }catch(err){
 
-slotsDiv.innerHTML=`<div class="error">エラー: ${err.message}</div>`
+slotsDiv.innerHTML=`<div class="error">エラー</div>`
 
 }
 
 }
-
-async function reserve(date,time){
-
-if(!confirm(`${date} ${time} で予約しますか？`)){
-return
-}
-
-try{
-
-const profile=await liff.getProfile()
-
-const res=await fetch(`${N8N_BASE_URL}/webhook/reserve`,{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-
-date:date,
-time:time,
-name:profile.displayName,
-userId:profile.userId
-
-})
-
-})
-
-const result=await res.json()
-
-if(result.status==="reserved"){
-
-alert("予約完了しました")
-
-liff.closeWindow()
-
-}else{
-
-alert("満席になりました")
-
-}
-
-}catch(err){
-
-alert("通信エラー")
-
-}
-
-}
-
-</script>
-
-</body>
-</html>
