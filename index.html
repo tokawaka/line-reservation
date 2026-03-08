@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,24 +25,44 @@
 
     <script>
         // --- 設定エリア ---
-        const N8N_BASE_URL = "https://tokawaka.app.n8n.cloud"; // あなたのn8nのURL
+        const N8N_BASE_URL = "https://tokawaka.app.n8n.cloud"; 
+        const LIFF_ID = "2009364776-YR9SsvM0"; 
         // ----------------
 
         async function initLIFF() {
-            await liff.init({ liffId: "2009364776-YR9SsvM0" }); // あなたのLIFF ID
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                }
+            } catch (err) {
+                console.error("LIFF初期化失敗", err);
+            }
         }
 
         document.getElementById('datePicker').addEventListener('change', async (e) => {
             const date = e.target.value;
+            if (!date) return;
+
+            console.log("選択された日付:", date); // デバッグ用
+
             const slotsDiv = document.getElementById('slots');
             slotsDiv.innerHTML = '<p class="loading">空き状況を確認中...</p>';
 
             try {
-                // 空き時間チェック用URL（check-slots）
-                const res = await fetch(`${N8N_BASE_URL}/webhook/check-slots?date=${date}`);
-                const data = await res.json();
+                // n8nのWebhookを呼び出し。?date=YYYY-MM-DD の形式で送信
+                const response = await fetch(`${N8N_BASE_URL}/webhook/check-slots?date=${date}`);
+                
+                if (!response.ok) {
+                    throw new Error(`サーバーエラー: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log("n8nからのレスポンス:", data);
 
                 slotsDiv.innerHTML = "";
+                
+                // data.slots が存在するかチェック
                 if (!data.slots || data.slots.length === 0) {
                     slotsDiv.innerHTML = "<p style='text-align:center;'>あいにく満席です。</p>";
                     return;
@@ -51,22 +71,25 @@
                 data.slots.forEach(slot => {
                     const btn = document.createElement('button');
                     btn.className = 'slot-btn';
+                    // 残り枠数などの表示
                     btn.innerText = `${slot.time} (残り${slot.remaining}枠)`;
                     btn.onclick = () => confirmBooking(date, slot.time);
                     slotsDiv.appendChild(btn);
                 });
+
             } catch (err) {
-                slotsDiv.innerHTML = "<p style='color:red;'>エラーが発生しました。</p>";
+                console.error("fetchエラー:", err);
+                slotsDiv.innerHTML = `<p style='color:red; text-align:center;'>エラーが発生しました。<br><small>${err.message}</small></p>`;
             }
         });
 
         async function confirmBooking(date, time) {
             if (!confirm(`${date} ${time} で予約を確定しますか？`)) return;
 
-            const profile = await liff.getProfile();
             try {
-                // 予約実行用URL（create-booking）
-                await fetch(`${N8N_BASE_URL}/webhook/create-booking`, {
+                const profile = await liff.getProfile();
+                
+                const response = await fetch(`${N8N_BASE_URL}/webhook/create-booking`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -76,10 +99,16 @@
                         userId: profile.userId
                     })
                 });
-                alert("予約が完了しました！");
-                liff.closeWindow();
+
+                if (response.ok) {
+                    alert("予約が完了しました！");
+                    liff.closeWindow();
+                } else {
+                    alert("予約に失敗しました。サーバー側の設定を確認してください。");
+                }
             } catch (err) {
-                alert("予約に失敗しました。");
+                console.error("予約送信エラー:", err);
+                alert("エラーが発生しました。");
             }
         }
 
