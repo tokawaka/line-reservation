@@ -1,11 +1,8 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>予約カレンダー</title>
+<meta charset="utf-8">
+<title>予約</title>
 
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
@@ -13,66 +10,24 @@
 
 body{
 font-family:sans-serif;
-background:#f0f2f5;
-display:flex;
-justify-content:center;
-margin:0;
-}
-
-.container{
-width:100%;
-max-width:450px;
-background:white;
 padding:20px;
-min-height:100vh;
-box-sizing:border-box;
 }
 
-h3{
-text-align:center;
+h1{
+font-size:22px;
 }
 
-input[type="date"]{
-width:100%;
-padding:12px;
-margin-bottom:20px;
-border-radius:8px;
-border:1px solid #ddd;
-font-size:16px;
-}
-
-#slots{
-display:grid;
-gap:10px;
+input{
+font-size:18px;
+padding:8px;
 }
 
 .slot-btn{
-padding:15px;
-border-radius:10px;
-border:2px solid #00B900;
-background:white;
-color:#00B900;
-font-size:16px;
-font-weight:bold;
-cursor:pointer;
-}
-
-.slot-btn:active{
-background:#00B900;
-color:white;
-}
-
-.loading{
-text-align:center;
-color:#888;
-}
-
-.error-display{
-color:#d32f2f;
-background:#ffebee;
-border:1px solid #ffcdd2;
-padding:10px;
-border-radius:8px;
+display:block;
+width:100%;
+padding:12px;
+margin:8px 0;
+font-size:18px;
 }
 
 </style>
@@ -81,140 +36,116 @@ border-radius:8px;
 
 <body>
 
-<div class="container">
+<h1>予約ページ</h1>
 
-<h3>予約日を選択</h3>
+<p>日付を選択</p>
 
 <input type="date" id="datePicker">
 
-<div id="slots"></div>
+<h2>空き時間</h2>
 
-</div>
+<div id="slots"></div>
 
 <script>
 
-const N8N_BASE_URL = "https://tokawaka.app.n8n.cloud";
-const LIFF_ID = "2009364776-YR9SsvM0";
+const N8N_BASE_URL="https://YOUR-N8N-URL";
 
-async function initLIFF() {
+function normalizeDate(dateString){
 
-  try {
+if(!dateString) return "";
 
-    await liff.init({ liffId: LIFF_ID });
+if(dateString.includes("/")){
+const parts=dateString.split("/");
+return `${parts[0]}-${parts[1].padStart(2,"0")}-${parts[2].padStart(2,"0")}`;
+}
 
-    if (!liff.isLoggedIn()) {
-      liff.login();
-    }
+if(dateString.includes("-")){
+const parts=dateString.split("-");
+return `${parts[0]}-${parts[1].padStart(2,"0")}-${parts[2].padStart(2,"0")}`;
+}
 
-  } catch (err) {
+const d=new Date(dateString);
 
-    console.error(err);
+const y=d.getFullYear();
+const m=String(d.getMonth()+1).padStart(2,"0");
+const day=String(d.getDate()).padStart(2,"0");
 
-  }
+return `${y}-${m}-${day}`;
 
 }
 
-initLIFF();
+async function loadSlots(e){
 
-document.getElementById("datePicker").addEventListener("change", loadSlots);
+const rawDate=e.target.value;
 
-async function loadSlots(e) {
+const date=normalizeDate(rawDate);
 
-  const date = e.target.value;
+if(!date) return;
 
-  if (!date) return;
+const slotsDiv=document.getElementById("slots");
 
-  const slotsDiv = document.getElementById("slots");
+slotsDiv.innerHTML='<p>空き状況を確認中...</p>';
 
-  slotsDiv.innerHTML = '<p class="loading">空き状況を確認中...</p>';
+try{
 
-  try {
+const res=await fetch(`${N8N_BASE_URL}/webhook/availability?date=${date}`);
 
-    const res = await fetch(`${N8N_BASE_URL}/webhook/availability?date=${date}`);
+const data=await res.json();
 
-    if (!res.ok) {
-      throw new Error("サーバーエラー");
-    }
+slotsDiv.innerHTML="";
 
-    const data = await res.json();
+data.forEach(slot=>{
 
-    slotsDiv.innerHTML = "";
+const btn=document.createElement("button");
 
-    if (!data || data.length === 0) {
-      slotsDiv.innerHTML = "<p style='text-align:center'>この日は空きがありません</p>";
-      return;
-    }
+btn.className="slot-btn";
 
-    data.forEach(slot => {
+btn.innerText=`${slot.time} (残り${slot.available})`;
 
-      const btn = document.createElement("button");
+btn.onclick=()=>reserve(date,slot.time);
 
-      btn.className = "slot-btn";
+slotsDiv.appendChild(btn);
 
-      btn.innerText = `${slot.time} (残り${slot.available})`;
+});
 
-      btn.onclick = () => reserve(date, slot.time);
+}catch(err){
 
-      slotsDiv.appendChild(btn);
-
-    });
-
-  } catch (err) {
-
-    console.error(err);
-
-    slotsDiv.innerHTML = '<div class="error-display">エラーが発生しました</div>';
-
-  }
+slotsDiv.innerHTML='<p>エラーが発生しました</p>';
 
 }
 
-async function reserve(date, time) {
+}
 
-  if (!confirm(`${date} ${time} で予約しますか？`)) return;
+async function reserve(date,time){
 
-  try {
+if(!confirm(`${date} ${time} を予約しますか？`)) return;
 
-    const profile = await liff.getProfile();
+try{
 
-    const res = await fetch(`${N8N_BASE_URL}/webhook/reserve`, {
+const res=await fetch(`${N8N_BASE_URL}/webhook/reserve`,{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+date:date,
+time:time
+})
+});
 
-      method: "POST",
+await res.json();
 
-      headers: {
-        "Content-Type": "application/json"
-      },
+alert("予約完了しました");
 
-      body: JSON.stringify({
-        date: date,
-        time: time,
-        name: profile.displayName,
-        userId: profile.userId
-      })
+}catch(err){
 
-    });
-
-    const result = await res.json();
-
-    if (result.status === "reserved") {
-
-      alert("予約完了しました");
-
-      liff.closeWindow();
-
-    } else {
-
-      alert("満席です");
-
-    }
-
-  } catch (err) {
-
-    alert("通信エラー");
-
-  }
+alert("予約に失敗しました");
 
 }
+
+}
+
+document.getElementById("datePicker").addEventListener("change",loadSlots);
 
 </script>
 
