@@ -11,9 +11,10 @@
         h3 { text-align: center; color: #333; }
         input[type="date"] { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
         #slots { display: grid; grid-template-columns: 1fr; gap: 10px; }
-        .slot-btn { padding: 15px; border: 1px solid #00b900; border-radius: 10px; background: white; color: #00b900; font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; }
+        .slot-btn { padding: 15px; border: 1px solid #00b900; border-radius: 10px; background: white; color: #00b900; font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; border: 1px solid #00b900; }
         .slot-btn:active { background: #00b900; color: white; }
         .loading { text-align: center; color: #888; }
+        .error-msg { color: red; text-align: center; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -25,6 +26,7 @@
 
     <script>
         // --- 設定エリア ---
+        // 末尾に / を入れない形で定義
         const N8N_BASE_URL = "https://tokawaka.app.n8n.cloud"; 
         const LIFF_ID = "2009364776-YR9SsvM0"; 
         // ----------------
@@ -44,75 +46,11 @@
             const date = e.target.value;
             if (!date) return;
 
-            console.log("選択された日付:", date); // デバッグ用
+            console.log("選択された日付:", date);
 
             const slotsDiv = document.getElementById('slots');
             slotsDiv.innerHTML = '<p class="loading">空き状況を確認中...</p>';
 
             try {
-                // n8nのWebhookを呼び出し。?date=YYYY-MM-DD の形式で送信
-                const response = await fetch(`${N8N_BASE_URL}/webhook/check-slots?date=${date}`);
-                
-                if (!response.ok) {
-                    throw new Error(`サーバーエラー: ${response.status}`);
-                }
-
-                const data = await response.json();
-                console.log("n8nからのレスポンス:", data);
-
-                slotsDiv.innerHTML = "";
-                
-                // data.slots が存在するかチェック
-                if (!data.slots || data.slots.length === 0) {
-                    slotsDiv.innerHTML = "<p style='text-align:center;'>あいにく満席です。</p>";
-                    return;
-                }
-
-                data.slots.forEach(slot => {
-                    const btn = document.createElement('button');
-                    btn.className = 'slot-btn';
-                    // 残り枠数などの表示
-                    btn.innerText = `${slot.time} (残り${slot.remaining}枠)`;
-                    btn.onclick = () => confirmBooking(date, slot.time);
-                    slotsDiv.appendChild(btn);
-                });
-
-            } catch (err) {
-                console.error("fetchエラー:", err);
-                slotsDiv.innerHTML = `<p style='color:red; text-align:center;'>エラーが発生しました。<br><small>${err.message}</small></p>`;
-            }
-        });
-
-        async function confirmBooking(date, time) {
-            if (!confirm(`${date} ${time} で予約を確定しますか？`)) return;
-
-            try {
-                const profile = await liff.getProfile();
-                
-                const response = await fetch(`${N8N_BASE_URL}/webhook/create-booking`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        date: date,
-                        time: time,
-                        name: profile.displayName,
-                        userId: profile.userId
-                    })
-                });
-
-                if (response.ok) {
-                    alert("予約が完了しました！");
-                    liff.closeWindow();
-                } else {
-                    alert("予約に失敗しました。サーバー側の設定を確認してください。");
-                }
-            } catch (err) {
-                console.error("予約送信エラー:", err);
-                alert("エラーが発生しました。");
-            }
-        }
-
-        initLIFF();
-    </script>
-</body>
-</html>
+                // ここが /webhook/check-slots?date=... になっていることを確認
+                const res = await fetch(`${N8N_BASE_URL}/
