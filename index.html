@@ -25,53 +25,32 @@
     </div>
 
     <script>
-        // --- 設定エリア ---
         const N8N_BASE_URL = "https://tokawaka.app.n8n.cloud"; 
         const LIFF_ID = "2009364776-YR9SsvM0"; 
-        // ----------------
 
         async function initLIFF() {
             try {
                 await liff.init({ liffId: LIFF_ID });
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                }
-                console.log("LIFF初期化完了");
+                if (!liff.isLoggedIn()) liff.login();
             } catch (err) {
-                console.error("LIFF初期化失敗:", err);
-                document.getElementById('slots').innerHTML = `<div class="error-display">LIFF初期化エラー: ${err.message}</div>`;
+                console.error(err);
             }
         }
 
         document.getElementById('datePicker').addEventListener('change', async (e) => {
-            const date = e.target.value;
+            const date = e.target.value; // YYYY-MM-DD
             if (!date) return;
 
             const slotsDiv = document.getElementById('slots');
             slotsDiv.innerHTML = '<p class="loading">空き状況を確認中...</p>';
-            
-            console.log("--- 予約確認開始 ---");
-            console.log("選択日付:", date);
 
             try {
-                const targetUrl = `${N8N_BASE_URL}/webhook/check-slots?date=${date}`;
-                console.log("Fetch先:", targetUrl);
-
-                // 通信実行
-                const res = await fetch(targetUrl, {
-                    method: 'GET',
-                    mode: 'cors'
-                });
-
-                console.log("HTTPステータス:", res.status);
-
-                if (!res.ok) {
-                    throw new Error(`n8n側でエラーが発生しました (Status: ${res.status})。n8nのExecutionを確認してください。`);
-                }
+                // dateの中身が確実に YYYY-MM-DD であることを確認して送信
+                const res = await fetch(`${N8N_BASE_URL}/webhook/check-slots?date=${date}`);
+                
+                if (!res.ok) throw new Error(`サーバーエラー: ${res.status}`);
 
                 const data = await res.json();
-                console.log("取得データ:", data);
-
                 slotsDiv.innerHTML = "";
 
                 if (!data.slots || data.slots.length === 0) {
@@ -88,29 +67,15 @@
                 });
 
             } catch (err) {
-                console.error("詳細エラーログ:", err);
-                
-                let errorMsg = err.message;
-                if (err.message === "Failed to fetch") {
-                    errorMsg = "通信に失敗しました。n8nのCORS設定が許可されているか、またはワークフローがActiveになっているか確認してください。";
-                }
-
-                slotsDiv.innerHTML = `
-                    <div class="error-display">
-                        <strong>エラーが発生しました</strong><br>
-                        ${errorMsg}
-                    </div>
-                `;
+                console.error(err);
+                slotsDiv.innerHTML = `<div class="error-display">エラー: ${err.message}</div>`;
             }
         });
 
         async function confirmBooking(date, time) {
             if (!confirm(`${date} ${time} で予約を確定しますか？`)) return;
-
             try {
                 const profile = await liff.getProfile();
-                console.log("予約実行ユーザー:", profile.displayName);
-
                 const res = await fetch(`${N8N_BASE_URL}/webhook/create-booking`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -121,21 +86,16 @@
                         userId: profile.userId
                     })
                 });
-
                 if (res.ok) {
                     alert("予約が完了しました！");
                     liff.closeWindow();
                 } else {
-                    const errorText = await res.text();
-                    console.error("予約失敗詳細:", errorText);
-                    alert("予約に失敗しました。n8n側のログを確認してください。");
+                    alert("予約に失敗しました。");
                 }
             } catch (err) {
-                console.error("予約送信エラー:", err);
-                alert(`通信エラー: ${err.message}`);
+                alert("通信エラーが発生しました。");
             }
         }
-
         initLIFF();
     </script>
 </body>
