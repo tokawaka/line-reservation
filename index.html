@@ -99,7 +99,131 @@ data.forEach(slot=>{
 const btn=document.createElement("button");
 
 btn.className="slot-btn";
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
 
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+<style>
+
+body{
+font-family:sans-serif;
+padding:20px;
+}
+
+.slot-btn{
+display:block;
+width:100%;
+padding:14px;
+margin:8px 0;
+font-size:18px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>予約</h2>
+
+<input type="date" id="datePicker">
+
+<div id="slots"></div>
+
+<script>
+
+const N8N_BASE_URL="https://あなたのn8nURL";
+
+function normalizeDate(date){
+
+if(!date) return "";
+
+const parts=date.split("-");
+
+const y=parts[0];
+const m=parts[1].padStart(2,"0");
+const d=parts[2].padStart(2,"0");
+
+return `${y}-${m}-${d}`;
+
+}
+
+
+async function loadSlots(e){
+
+const date=normalizeDate(e.target.value);
+
+const slotsDiv=document.getElementById("slots");
+
+slotsDiv.innerHTML="読み込み中...";
+
+try{
+
+const res=await fetch(`${N8N_BASE_URL}/webhook/availability?date=${date}`);
+
+const data=await res.json();
+
+slotsDiv.innerHTML="";
+
+data.forEach(slot=>{
+
+const btn=document.createElement("button");
+
+btn.className="slot-btn";
+
+const time=slot.time.slice(0,5);
+
+btn.innerText=`${time} (残${slot.available})`;
+
+btn.onclick=()=>reserve(date,time);
+
+slotsDiv.appendChild(btn);
+
+});
+
+}catch(err){
+
+slotsDiv.innerHTML="取得エラー";
+
+}
+
+}
+
+
+async function reserve(date,time){
+
+if(!confirm(`${date} ${time} 予約しますか？`)) return;
+
+await fetch(`${N8N_BASE_URL}/webhook/reserve`,{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+date:date,
+time:time
+})
+
+});
+
+alert("予約しました");
+
+}
+
+document
+.getElementById("datePicker")
+.addEventListener("change",loadSlots);
+
+</script>
+
+</body>
+</html>
 btn.innerText=`${slot.time} (残り${slot.available})`;
 
 btn.onclick=()=>reserve(date,slot.time);
