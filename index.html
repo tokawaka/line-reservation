@@ -14,7 +14,7 @@
         .slot-btn { padding: 15px; border: 1px solid #00b900; border-radius: 10px; background: white; color: #00b900; font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; border: 1px solid #00b900; }
         .slot-btn:active { background: #00b900; color: white; }
         .loading { text-align: center; color: #888; }
-        .error-msg { color: red; text-align: center; font-size: 14px; }
+        .error-display { color: #d32f2f; background: #ffebee; border: 1px solid #ffcdd2; padding: 10px; border-radius: 8px; font-size: 14px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -26,7 +26,6 @@
 
     <script>
         // --- 設定エリア ---
-        // 末尾に / を入れない形で定義
         const N8N_BASE_URL = "https://tokawaka.app.n8n.cloud"; 
         const LIFF_ID = "2009364776-YR9SsvM0"; 
         // ----------------
@@ -37,8 +36,10 @@
                 if (!liff.isLoggedIn()) {
                     liff.login();
                 }
+                console.log("LIFF初期化完了");
             } catch (err) {
-                console.error("LIFF初期化失敗", err);
+                console.error("LIFF初期化失敗:", err);
+                document.getElementById('slots').innerHTML = `<div class="error-display">LIFF初期化エラー: ${err.message}</div>`;
             }
         }
 
@@ -46,11 +47,96 @@
             const date = e.target.value;
             if (!date) return;
 
-            console.log("選択された日付:", date);
-
             const slotsDiv = document.getElementById('slots');
             slotsDiv.innerHTML = '<p class="loading">空き状況を確認中...</p>';
+            
+            console.log("--- 予約確認開始 ---");
+            console.log("選択日付:", date);
 
             try {
-                // ここが /webhook/check-slots?date=... になっていることを確認
-                const res = await fetch(`${N8N_BASE_URL}/
+                const targetUrl = `${N8N_BASE_URL}/webhook/check-slots?date=${date}`;
+                console.log("Fetch先:", targetUrl);
+
+                // 通信実行
+                const res = await fetch(targetUrl, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+
+                console.log("HTTPステータス:", res.status);
+
+                if (!res.ok) {
+                    throw new Error(`n8n側でエラーが発生しました (Status: ${res.status})。n8nのExecutionを確認してください。`);
+                }
+
+                const data = await res.json();
+                console.log("取得データ:", data);
+
+                slotsDiv.innerHTML = "";
+
+                if (!data.slots || data.slots.length === 0) {
+                    slotsDiv.innerHTML = "<p style='text-align:center;'>あいにく満席です。</p>";
+                    return;
+                }
+
+                data.slots.forEach(slot => {
+                    const btn = document.createElement('button');
+                    btn.className = 'slot-btn';
+                    btn.innerText = `${slot.time} (残り${slot.remaining}枠)`;
+                    btn.onclick = () => confirmBooking(date, slot.time);
+                    slotsDiv.appendChild(btn);
+                });
+
+            } catch (err) {
+                console.error("詳細エラーログ:", err);
+                
+                let errorMsg = err.message;
+                if (err.message === "Failed to fetch") {
+                    errorMsg = "通信に失敗しました。n8nのCORS設定が許可されているか、またはワークフローがActiveになっているか確認してください。";
+                }
+
+                slotsDiv.innerHTML = `
+                    <div class="error-display">
+                        <strong>エラーが発生しました</strong><br>
+                        ${errorMsg}
+                    </div>
+                `;
+            }
+        });
+
+        async function confirmBooking(date, time) {
+            if (!confirm(`${date} ${time} で予約を確定しますか？`)) return;
+
+            try {
+                const profile = await liff.getProfile();
+                console.log("予約実行ユーザー:", profile.displayName);
+
+                const res = await fetch(`${N8N_BASE_URL}/webhook/create-booking`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        date: date,
+                        time: time,
+                        name: profile.displayName,
+                        userId: profile.userId
+                    })
+                });
+
+                if (res.ok) {
+                    alert("予約が完了しました！");
+                    liff.closeWindow();
+                } else {
+                    const errorText = await res.text();
+                    console.error("予約失敗詳細:", errorText);
+                    alert("予約に失敗しました。n8n側のログを確認してください。");
+                }
+            } catch (err) {
+                console.error("予約送信エラー:", err);
+                alert(`通信エラー: ${err.message}`);
+            }
+        }
+
+        initLIFF();
+    </script>
+</body>
+</html>
