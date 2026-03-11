@@ -717,8 +717,9 @@ async function loadSlots() {
 
   try {
     const res = await fetch(`${CONFIG.GET_SLOTS_URL}?date=${dateStr}&userId=${CONFIG.LINE_USER_ID}`);
-    const data = await res.json();
-    state.slotData = data;
+    const raw = await res.json();
+    // 配列で返ってくる場合は最初の要素を使う
+    state.slotData = Array.isArray(raw) ? raw[0] : raw;
     renderSlots();
   } catch(e) {
     document.getElementById('slotsArea').innerHTML =
@@ -801,7 +802,7 @@ async function submitBooking() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    // レスポンスが何であれ200なら成功扱い
+    // 200が返ってきたら成功扱い
     showSuccess(name);
   } catch(e) {
     errEl.textContent = '通信エラーが発生しました。再度お試しください。';
