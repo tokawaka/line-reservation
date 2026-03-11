@@ -720,7 +720,14 @@ async function loadSlots() {
     const res = await fetch(`${CONFIG.GET_SLOTS_URL}?date=${dateStr}&userId=${CONFIG.LINE_USER_ID}`);
     const raw = await res.json();
     // 配列で返ってくる場合は最初の要素を使う
-    state.slotData = Array.isArray(raw) ? raw[0] : raw;
+    const data = Array.isArray(raw) ? raw[0] : raw;
+    // 休館日チェック
+    if (data.closed) {
+      document.getElementById('slotsArea').innerHTML =
+        '<div class="loading-msg">この日は休館日です。<br>別の日付をお選びください。</div>';
+      return;
+    }
+    state.slotData = data;
     renderSlots();
   } catch(e) {
     document.getElementById('slotsArea').innerHTML =
