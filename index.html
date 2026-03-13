@@ -485,7 +485,7 @@ function renderCalendar() {
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(viewYear, viewMonth, d);
     const dow = date.getDay();
-    const isPast = date < today;
+    const isPast = date <= today; // 当日も選択不可
     const isToday = date.getTime() === today.getTime();
     const isSel = state.selectedDate && date.getTime() === state.selectedDate.getTime();
     // 今月上限到達かつ今月の日付はクリック不可
