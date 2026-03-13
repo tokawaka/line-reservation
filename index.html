@@ -515,6 +515,56 @@
     letter-spacing: 0.05em;
     display: none;
   }
+
+  /* 会員情報バナー */
+  .member-banner {
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .member-banner.hidden { display: none; }
+  .member-name {
+    font-size: 14px;
+    letter-spacing: 0.05em;
+  }
+  .member-name span {
+    font-size: 11px;
+    color: var(--muted);
+    margin-right: 4px;
+  }
+  .member-remaining {
+    font-size: 13px;
+    color: var(--available);
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .member-remaining.zero { color: var(--accent); }
+
+  /* 予約不可バナー */
+  .blocked-banner {
+    margin: 24px;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    display: none;
+  }
+  .blocked-banner.visible { display: block; }
+  .blocked-banner-title {
+    font-size: 15px;
+    color: #991b1b;
+    margin-bottom: 8px;
+  }
+  .blocked-banner-sub {
+    font-size: 12px;
+    color: #b91c1c;
+    line-height: 1.6;
+  }
 </style>
 </head>
 <body>
@@ -523,6 +573,16 @@
   <div class="header-label">Reservation System</div>
   <h1>ご予約</h1>
   <div class="header-sub">10:00 – 22:00 ／ 1時間枠 ／ 各枠3名まで</div>
+</div>
+
+<div class="member-banner hidden" id="memberBanner">
+  <div class="member-name"><span>会員</span><span id="memberName">—</span> さん</div>
+  <div class="member-remaining" id="memberRemaining">—</div>
+</div>
+
+<div class="blocked-banner" id="blockedBanner">
+  <div class="blocked-banner-title" id="blockedTitle">予約できません</div>
+  <div class="blocked-banner-sub" id="blockedSub"></div>
 </div>
 
 <div class="steps">
@@ -626,13 +686,10 @@
 // CONFIG — ここを環境に合わせて変更してください
 // ============================================================
 const CONFIG = {
-  // n8n webhook: Google Calendarの予約状況を取得するエンドポイント
   GET_SLOTS_URL: 'https://tokawaka.app.n8n.cloud/webhook/get-slots',
-  // n8n webhook: 予約を登録するエンドポイント
   BOOK_URL: 'https://tokawaka.app.n8n.cloud/webhook/book',
-  // LINE User ID (URLパラメータから自動取得)
+  GET_USER_INFO_URL: 'https://tokawaka.app.n8n.cloud/webhook/get-user-info',
   LINE_USER_ID: new URLSearchParams(location.search).get('userId') || '',
-  // 営業時間
   START_HOUR: 10,
   END_HOUR: 22,
   MAX_PER_SLOT: 3,
@@ -843,6 +900,53 @@ function goStep(n) {
 
 // ---- Init ----
 renderCalendar();
+loadUserInfo();
+
+async function loadUserInfo() {
+  if (!CONFIG.LINE_USER_ID) return;
+  try {
+    const res = await fetch(`${CONFIG.GET_USER_INFO_URL}?userId=${CONFIG.LINE_USER_ID}`);
+    const raw = await res.json();
+    const data = Array.isArray(raw) ? raw[0] : raw;
+
+    // 会員名表示
+    document.getElementById('memberName').textContent = data.name || '';
+    document.getElementById('memberBanner').classList.remove('hidden');
+
+    // ステータスチェック
+    const status = data.status || '';
+    if (status === '退会') {
+      showBlocked('ご利用いただけません', '退会済みのため予約できません。\nお問い合わせください。');
+      return;
+    }
+    if (status === '休会') {
+      showBlocked('休会中です', '休会期間中は予約できません。\n再開をお待ちしております。');
+      return;
+    }
+
+    // 残り回数チェック
+    const remaining = data.remaining ?? 0;
+    const remainingEl = document.getElementById('memberRemaining');
+    if (remaining <= 0) {
+      remainingEl.textContent = '今月の予約上限に達しました';
+      remainingEl.classList.add('zero');
+      showBlocked('今月の予約上限に達しました', `今月はすでに${data.limit}回ご予約いただいています。\n来月またのご利用をお待ちしております。`);
+    } else {
+      remainingEl.textContent = `今月あと${remaining}回予約できます`;
+    }
+  } catch(e) {
+    // エラー時は何も表示しない（予約は続行可能）
+  }
+}
+
+function showBlocked(title, sub) {
+  document.getElementById('blockedTitle').textContent = title;
+  document.getElementById('blockedSub').textContent = sub;
+  document.getElementById('blockedBanner').classList.add('visible');
+  // ステップを非表示
+  document.querySelector('.steps').style.display = 'none';
+  document.getElementById('sec1').classList.remove('visible');
+}
 </script>
 </body>
 </html>
