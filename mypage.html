@@ -507,12 +507,32 @@ function renderBookings() {
     list.innerHTML = '<div class="loading-msg">現在、予約はありません。</div>';
     return;
   }
+  const now = new Date();
   list.innerHTML = state.bookings.map((b, i) => {
     const start = b.startTime;
     const month = parseInt(start.substring(5, 7));
     const day = parseInt(start.substring(8, 10));
     const hour = parseInt(start.substring(11, 13));
     const dow = DAYS_JP[new Date(start).getDay()];
+
+    // 前日17時の期限チェック
+    const bookingDate = new Date(start);
+    const deadline = new Date(bookingDate);
+    deadline.setDate(deadline.getDate() - 1);
+    deadline.setHours(17, 0, 0, 0);
+    const isExpired = now > deadline;
+
+    if (isExpired) {
+      return `
+      <div class="booking-card">
+        <div class="booking-card-body">
+          <div class="booking-date">${month}月${day}日（${dow}）</div>
+          <div class="booking-time">${hour}:00 〜 ${hour+1}:00</div>
+          <div style="font-size:11px; color:var(--muted); margin-top:8px;">前日17時を過ぎたため変更・キャンセルできません</div>
+        </div>
+      </div>`;
+    }
+
     return `
     <div class="booking-card">
       <div class="booking-card-body">

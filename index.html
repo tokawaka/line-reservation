@@ -64,7 +64,7 @@
     letter-spacing: 0.1em;
   }
 
-  /* ローディング画面 */
+  /* ローディング */
   .init-loading {
     text-align: center;
     padding: 60px 24px;
@@ -78,11 +78,7 @@
     margin: 0 auto 16px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .init-loading p {
-    font-size: 13px;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-  }
+  .init-loading p { font-size: 13px; color: var(--muted); letter-spacing: 0.1em; }
 
   /* 会員情報バナー */
   .member-banner {
@@ -94,26 +90,25 @@
     justify-content: space-between;
     gap: 12px;
   }
-  .member-name {
-    font-size: 13px;
-    color: var(--muted);
-    letter-spacing: 0.05em;
-  }
-  .member-name strong {
-    font-size: 17px;
-    font-weight: 600;
-    color: var(--ink);
-    letter-spacing: 0.05em;
-    margin-right: 2px;
-  }
-  .member-remaining {
-    font-size: 12px;
-    color: var(--available);
-    letter-spacing: 0.05em;
-    white-space: nowrap;
-    text-align: right;
-  }
+  .member-name { font-size: 13px; color: var(--muted); letter-spacing: 0.05em; }
+  .member-name strong { font-size: 17px; font-weight: 600; color: var(--ink); letter-spacing: 0.05em; margin-right: 2px; }
+  .member-remaining { font-size: 12px; color: var(--available); letter-spacing: 0.05em; white-space: nowrap; text-align: right; }
   .member-remaining.zero { color: var(--accent); }
+
+  /* 今月上限バナー（予約は来月以降可能） */
+  .limit-banner {
+    margin: 16px 24px 0;
+    background: #fff8f0;
+    border: 1px solid #f0c090;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: #a04010;
+    line-height: 1.7;
+    white-space: pre-line;
+    display: none;
+  }
+  .limit-banner.visible { display: block; }
 
   /* 予約不可バナー */
   .blocked-banner {
@@ -124,18 +119,8 @@
     padding: 24px;
     text-align: center;
   }
-  .blocked-banner-title {
-    font-size: 16px;
-    color: #991b1b;
-    margin-bottom: 10px;
-    font-weight: 400;
-  }
-  .blocked-banner-sub {
-    font-size: 13px;
-    color: #b91c1c;
-    line-height: 1.8;
-    white-space: pre-line;
-  }
+  .blocked-banner-title { font-size: 16px; color: #991b1b; margin-bottom: 10px; font-weight: 400; }
+  .blocked-banner-sub { font-size: 13px; color: #b91c1c; line-height: 1.8; white-space: pre-line; }
 
   /* Steps */
   .steps {
@@ -145,21 +130,12 @@
     border-bottom: 1px solid var(--line);
     background: var(--card);
   }
-  .step {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    position: relative;
-  }
+  .step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; }
   .step:not(:last-child)::after {
     content: '';
     position: absolute;
-    top: 11px;
-    right: -50%;
-    width: 100%;
-    height: 1px;
+    top: 11px; right: -50%;
+    width: 100%; height: 1px;
     background: var(--line);
   }
   .step-num {
@@ -169,60 +145,28 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 10px;
     background: var(--paper);
-    position: relative;
-    z-index: 1;
+    position: relative; z-index: 1;
     transition: all 0.3s;
   }
-  .step.active .step-num, .step.done .step-num {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent);
-  }
-  .step-label {
-    font-size: 10px;
-    color: var(--muted);
-    letter-spacing: 0.05em;
-    font-weight: 300;
-  }
+  .step.active .step-num, .step.done .step-num { background: var(--accent); color: white; border-color: var(--accent); }
+  .step-label { font-size: 10px; color: var(--muted); letter-spacing: 0.05em; font-weight: 300; }
   .step.active .step-label { color: var(--ink); }
 
   /* Sections */
-  .section {
-    display: none;
-    padding: 24px;
-    animation: fadeUp 0.35s ease;
-  }
+  .section { display: none; padding: 24px; animation: fadeUp 0.35s ease; }
   .section.visible { display: block; }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
   .section-title {
-    font-size: 13px;
-    font-weight: 300;
-    letter-spacing: 0.15em;
-    color: var(--muted);
-    text-transform: uppercase;
+    font-size: 13px; font-weight: 300; letter-spacing: 0.15em;
+    color: var(--muted); text-transform: uppercase;
     margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    display: flex; align-items: center; gap: 10px;
   }
-  .section-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--line);
-  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 
   /* Calendar */
-  .cal-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 18px;
-  }
+  .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .cal-month { font-size: 16px; font-weight: 400; letter-spacing: 0.1em; }
   .cal-btn {
     width: 36px; height: 36px;
@@ -231,101 +175,47 @@
     border-radius: 4px;
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
-    transition: all 0.2s;
-    color: var(--ink);
+    font-size: 16px; transition: all 0.2s; color: var(--ink);
   }
   .cal-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-  .cal-dow {
-    text-align: center;
-    font-size: 10px;
-    color: var(--muted);
-    padding: 6px 0;
-    letter-spacing: 0.05em;
-  }
+  .cal-dow { text-align: center; font-size: 10px; color: var(--muted); padding: 6px 0; letter-spacing: 0.05em; }
   .cal-day {
     aspect-ratio: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: 1px solid transparent;
-    font-weight: 300;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; border-radius: 4px; cursor: pointer;
+    transition: all 0.2s; border: 1px solid transparent; font-weight: 300;
   }
-  .cal-day:hover:not(.empty):not(.past) { background: var(--hover-bg); border-color: var(--accent); color: var(--accent); }
+  .cal-day:hover:not(.empty):not(.past):not(.limit-month) { background: var(--hover-bg); border-color: var(--accent); color: var(--accent); }
   .cal-day.empty { cursor: default; }
   .cal-day.past { color: var(--line); cursor: not-allowed; }
   .cal-day.today { font-weight: 600; color: var(--accent); }
   .cal-day.selected { background: var(--ink); color: var(--paper) !important; border-color: var(--ink); }
   .cal-day.sun { color: #c0392b; }
   .cal-day.sat { color: #2980b9; }
+  .cal-day.limit-month { color: var(--line); cursor: not-allowed; }
 
   /* Time slots */
   .selected-date-display {
-    background: var(--ink);
-    color: var(--paper);
-    padding: 14px 18px;
-    border-radius: 6px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    background: var(--ink); color: var(--paper);
+    padding: 14px 18px; border-radius: 6px; margin-bottom: 20px;
+    display: flex; align-items: center; justify-content: space-between;
   }
   .selected-date-display .date-text { font-size: 15px; letter-spacing: 0.08em; }
-  .selected-date-display .change-btn {
-    font-size: 10px;
-    color: var(--accent);
-    cursor: pointer;
-    letter-spacing: 0.1em;
-    text-decoration: underline;
-  }
+  .selected-date-display .change-btn { font-size: 10px; color: var(--accent); cursor: pointer; letter-spacing: 0.1em; text-decoration: underline; }
 
-  .loading-msg {
-    text-align: center;
-    padding: 40px;
-    color: var(--muted);
-    font-size: 13px;
-    letter-spacing: 0.1em;
-  }
-  .loading-msg .spinner {
-    width: 24px; height: 24px;
-    border: 2px solid var(--line);
-    border-top-color: var(--ink);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 12px;
-  }
+  .loading-msg { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; letter-spacing: 0.1em; }
+  .loading-msg .spinner { width: 24px; height: 24px; border: 2px solid var(--line); border-top-color: var(--ink); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
 
   .slots-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
   .slot-row { display: grid; grid-template-columns: 90px 1fr; gap: 10px; align-items: center; }
-  .slot-time {
-    font-size: 13px;
-    color: var(--muted);
-    text-align: right;
-    padding-right: 10px;
-    border-right: 1px solid var(--line);
-    line-height: 1;
-    padding-top: 2px;
-  }
+  .slot-time { font-size: 13px; color: var(--muted); text-align: right; padding-right: 10px; border-right: 1px solid var(--line); line-height: 1; padding-top: 2px; }
   .slot-cells { display: block; }
   .slot-cell {
-    width: 100%;
-    height: 48px;
-    font-size: 14px;
-    border-radius: 6px;
-    border: 1.5px solid var(--line);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
+    width: 100%; height: 48px; font-size: 14px;
+    border-radius: 6px; border: 1.5px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
   }
   .slot-cell.available { border-color: var(--available); color: var(--available); background: rgba(45,106,79,0.04); }
   .slot-cell.available:hover { background: var(--available); color: white; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(45,106,79,0.25); }
@@ -348,46 +238,32 @@
   .confirm-value { font-size: 14px; font-weight: 400; letter-spacing: 0.05em; }
 
   .btn-primary {
-    width: 100%;
-    padding: 16px;
-    background: var(--accent);
-    color: var(--paper);
-    border: none;
-    border-radius: 6px;
+    width: 100%; padding: 16px;
+    background: var(--accent); color: var(--paper);
+    border: none; border-radius: 6px;
     font-family: 'Meiryo', 'メイリオ', sans-serif;
-    font-size: 14px;
-    letter-spacing: 0.15em;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-    overflow: hidden;
+    font-size: 14px; letter-spacing: 0.15em;
+    cursor: pointer; transition: all 0.2s;
+    position: relative; overflow: hidden;
   }
   .btn-primary:hover { opacity: 0.9; }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-primary::after { content: '→'; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 16px; }
 
   .error-msg {
-    background: #fef2f2;
-    border: 1px solid #fca5a5;
-    border-radius: 6px;
-    padding: 12px 16px;
-    font-size: 12px;
-    color: #991b1b;
-    margin-bottom: 16px;
-    letter-spacing: 0.05em;
-    display: none;
+    background: #fef2f2; border: 1px solid #fca5a5;
+    border-radius: 6px; padding: 12px 16px;
+    font-size: 12px; color: #991b1b;
+    margin-bottom: 16px; letter-spacing: 0.05em; display: none;
   }
 
   /* Success */
   .success-wrap { text-align: center; padding: 40px 24px; }
   .success-icon {
-    width: 64px; height: 64px;
-    background: var(--accent);
-    border-radius: 50%;
-    margin: 0 auto 24px;
+    width: 64px; height: 64px; background: var(--accent);
+    border-radius: 50%; margin: 0 auto 24px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 28px;
-    color: white;
+    font-size: 28px; color: white;
     animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
   }
   @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -403,7 +279,7 @@
 <div class="header">
   <div class="header-label">Reservation System</div>
   <h1>ご予約</h1>
-  <div class="header-sub">10:00 – 22:00 ／ 1時間枠 ／ 各枠3名まで</div>
+  <div class="header-sub">10:00 – 20:00 ／ 1時間枠</div>
 </div>
 
 <!-- 読み込み中 -->
@@ -412,7 +288,7 @@
   <p>読み込み中...</p>
 </div>
 
-<!-- 予約不可バナー -->
+<!-- 予約不可バナー（退会・休会） -->
 <div id="blockedArea" style="display:none;">
   <div class="blocked-banner">
     <div class="blocked-banner-title" id="blockedTitle"></div>
@@ -427,6 +303,9 @@
     <div class="member-name"><strong id="memberName">—</strong> さん</div>
     <div class="member-remaining" id="memberRemaining"></div>
   </div>
+
+  <!-- 今月上限バナー（来月以降は予約可能） -->
+  <div class="limit-banner" id="limitBanner"></div>
 
   <div class="steps">
     <div class="step active" id="step1"><div class="step-num">1</div><div class="step-label">日付</div></div>
@@ -528,51 +407,55 @@ let state = {
   selectedHour: null,
   slotData: {},
   userName: '',
+  thisMonthLimitReached: false,
 };
 
-// ---- Init: 会員情報を先に取得してからカレンダー表示 ----
+// ---- Init ----
 async function init() {
   try {
     if (!CONFIG.LINE_USER_ID) {
       showBlocked('LINEから開いてください', 'このページはLINEの\n「新規予約」ボタンから開いてください。');
       return;
     }
-    if (CONFIG.LINE_USER_ID) {
-      const res = await fetch(`${CONFIG.GET_USER_INFO_URL}?userId=${CONFIG.LINE_USER_ID}`);
-      const raw = await res.json();
-      const data = Array.isArray(raw) ? raw[0] : raw;
 
-      state.userName = data.name || '';
-      document.getElementById('memberName').textContent = data.name || '';
+    const res = await fetch(`${CONFIG.GET_USER_INFO_URL}?userId=${CONFIG.LINE_USER_ID}`);
+    const raw = await res.json();
+    const data = Array.isArray(raw) ? raw[0] : raw;
 
-      const status = data.status || '';
-      if (status === '退会') {
-        showBlocked('ご利用いただけません', '退会済みのため予約できません。\nお問い合わせください。');
-        return;
-      }
-      if (status === '休会') {
-        showBlocked('休会中です', '休会期間中は予約できません。\n再開をお待ちしております。');
-        return;
-      }
+    state.userName = data.name || '';
+    document.getElementById('memberName').textContent = data.name || '';
 
-      const remaining = data.remaining ?? 0;
-      const remainingEl = document.getElementById('memberRemaining');
-      if (remaining <= 0) {
-        remainingEl.textContent = '今月の予約上限に達しました';
-        remainingEl.classList.add('zero');
-        showBlocked('今月の予約上限に達しました', `今月はすでに${data.limit}回ご予約いただいています。\n来月またのご利用をお待ちしております。`);
-        return;
-      }
+    const status = data.status || '';
+    if (status === '退会') {
+      showBlocked('ご利用いただけません', '退会済みのため予約できません。\nお問い合わせください。');
+      return;
+    }
+    if (status === '休会') {
+      showBlocked('休会中です', '休会期間中は予約できません。\n再開をお待ちしております。');
+      return;
+    }
+
+    const remaining = data.remaining ?? 0;
+    const remainingEl = document.getElementById('memberRemaining');
+
+    if (remaining <= 0) {
+      // 今月上限到達 → バナー表示のみ、来月以降は予約可能
+      remainingEl.textContent = '今月の予約上限に達しました';
+      remainingEl.classList.add('zero');
+      state.thisMonthLimitReached = true;
+      const now = new Date();
+      const limitBanner = document.getElementById('limitBanner');
+      limitBanner.textContent = `今月（${now.getMonth()+1}月）の予約上限に達しました。\n来月以降の日付はご予約いただけます。`;
+      limitBanner.classList.add('visible');
+    } else {
       remainingEl.textContent = `今月あと${remaining}回予約できます`;
     }
 
-    // 予約フォームを表示
     document.getElementById('initLoading').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
     renderCalendar();
 
   } catch(e) {
-    // エラー時もフォームを表示
     document.getElementById('initLoading').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
     renderCalendar();
@@ -594,6 +477,8 @@ function renderCalendar() {
   const first = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const today = new Date(); today.setHours(0,0,0,0);
+  const nowMonth = new Date(); nowMonth.setDate(1); nowMonth.setHours(0,0,0,0);
+  const isCurrentMonth = viewYear === today.getFullYear() && viewMonth === today.getMonth();
 
   let html = '';
   for (let i = 0; i < first; i++) html += '<div class="cal-day empty"></div>';
@@ -603,13 +488,18 @@ function renderCalendar() {
     const isPast = date < today;
     const isToday = date.getTime() === today.getTime();
     const isSel = state.selectedDate && date.getTime() === state.selectedDate.getTime();
+    // 今月上限到達かつ今月の日付はクリック不可
+    const isLimitMonth = state.thisMonthLimitReached && isCurrentMonth;
+
     let cls = 'cal-day';
     if (isPast) cls += ' past';
+    else if (isLimitMonth) cls += ' limit-month';
     else if (dow === 0) cls += ' sun';
     else if (dow === 6) cls += ' sat';
     if (isToday) cls += ' today';
     if (isSel) cls += ' selected';
-    const onclick = isPast ? '' : `onclick="selectDate(${viewYear},${viewMonth},${d})"`;
+
+    const onclick = (isPast || isLimitMonth) ? '' : `onclick="selectDate(${viewYear},${viewMonth},${d})"`;
     html += `<div class="${cls}" ${onclick}>${d}</div>`;
   }
   document.getElementById('calDays').innerHTML = html;
@@ -716,11 +606,23 @@ async function submitBooking() {
   };
 
   try {
-    await fetch(CONFIG.BOOK_URL, {
+    const res = await fetch(CONFIG.BOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+    const data = await res.json();
+    const result = Array.isArray(data) ? data[0] : data;
+
+    // 二重予約チェック
+    if (result.error === 'duplicate') {
+      errEl.textContent = 'その日時はすでにご予約済みです。別の日時をお選びください。';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = '予約を確定する';
+      return;
+    }
+
     document.getElementById('doneDate').textContent = formatDateJP(state.selectedDate);
     document.getElementById('doneTime').textContent = `${pad(state.selectedHour)}:00 〜 ${pad(state.selectedHour+1)}:00`;
     goStep(4);
