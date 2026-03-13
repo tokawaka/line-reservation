@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>予約確認</title>
+<style>
+  :root {
+    --ink: #1a1a18;
+    --paper: #f5f0e8;
+    --accent: #c8602a;
+    --muted: #9a9080;
+    --line: #d4ccc0;
+    --danger: #c0392b;
+    --card: #fffdf8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Meiryo', 'メイリオ', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  .header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 28px 24px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 120px; height: 100%;
+    background: var(--accent);
+    clip-path: polygon(30% 0, 100% 0, 100% 100%, 0% 100%);
+    opacity: 0.15;
+  }
+  .header-label {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 300;
+    letter-spacing: 0.08em;
+  }
+
+  .section {
+    padding: 24px;
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  .loading-msg {
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .spinner {
+    width: 24px; height: 24px;
+    border: 2px solid var(--line);
+    border-top-color: var(--ink);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .booking-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .booking-card-body {
+    padding: 16px 18px;
+  }
+  .booking-date {
+    font-size: 16px;
+    font-weight: 400;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  .booking-time {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .booking-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .btn-cancel {
+    flex: 1;
+    padding: 10px;
+    background: white;
+    color: var(--danger);
+    border: 1.5px solid var(--danger);
+    border-radius: 6px;
+    font-family: 'Meiryo', 'メイリオ', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-cancel:hover {
+    background: var(--danger);
+    color: white;
+  }
+  .btn-change {
+    flex: 1;
+    padding: 10px;
+    background: var(--ink);
+    color: white;
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    font-family: 'Meiryo', 'メイリオ', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-change:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  /* モーダル */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay.visible {
+    display: flex;
+  }
+  .modal {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 24px;
+    width: 100%;
+    max-width: 340px;
+    animation: fadeUp 0.25s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .modal-title {
+    font-size: 16px;
+    font-weight: 400;
+    margin-bottom: 8px;
+  }
+  .modal-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .btn-modal-cancel {
+    flex: 1;
+    padding: 12px;
+    background: white;
+    color: var(--ink);
+    border: 1.5px solid var(--line);
+    border-radius: 6px;
+    font-family: 'Meiryo', 'メイリオ', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .btn-modal-confirm {
+    flex: 1;
+    padding: 12px;
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Meiryo', 'メイリオ', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  /* 変更画面 */
+  .change-section {
+    display: none;
+  }
+  .change-section.visible {
+    display: block;
+  }
+
+  /* カレンダー */
+  .cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .cal-month {
+    font-size: 16px;
+    letter-spacing: 0.1em;
+  }
+  .cal-btn {
+    width: 36px; height: 36px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s;
+  }
+  .cal-btn:hover { background: var(--ink); color: var(--paper); }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .cal-dow {
+    text-align: center;
+    font-size: 10px;
+    color: var(--muted);
+    padding: 6px 0;
+  }
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+  .cal-day:hover:not(.empty):not(.past) {
+    background: #fff8f0;
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .cal-day.empty { cursor: default; }
+  .cal-day.past { color: var(--line); cursor: not-allowed; }
+  .cal-day.today { font-weight: 600; color: var(--accent); }
+  .cal-day.selected { background: var(--ink); color: var(--paper); }
+  .cal-day.sun { color: #c0392b; }
+  .cal-day.sat { color: #2980b9; }
+  .cal-day.selected { color: var(--paper) !important; }
+
+  .slots-grid { margin-top: 20px; }
+  .slot-row {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .slot-time {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: right;
+    padding-right: 10px;
+    border-right: 1px solid var(--line);
+  }
+  .slot-cell {
+    width: 100%;
+    height: 44px;
+    border-radius: 6px;
+    border: 1.5px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .slot-cell.available {
+    border-color: #2d6a4f;
+    color: #2d6a4f;
+    background: rgba(45,106,79,0.04);
+  }
+  .slot-cell.available:hover {
+    background: #2d6a4f;
+    color: white;
+  }
+  .slot-cell.booked {
+    color: #b5b0a8;
+    cursor: not-allowed;
+  }
+  .slot-cell.selected-slot {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 6px;
+    font-family: 'Meiryo', 'メイリオ', sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.2s;
+  }
+  .btn-primary:hover { background: var(--accent); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-back {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font-family: 'Meiryo', 'メイリオ', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+
+  .success-wrap {
+    text-align: center;
+    padding: 40px 24px;
+  }
+  .success-icon {
+    width: 64px; height: 64px;
+    background: #2d6a4f;
+    border-radius: 50%;
+    margin: 0 auto 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    color: white;
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes popIn {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+  }
+  .success-title {
+    font-size: 18px;
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+  .success-sub {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .error-msg {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: #991b1b;
+    margin-top: 12px;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">My Bookings</div>
+  <h1>予約確認</h1>
+</div>
+
+<!-- 予約一覧 -->
+<div class="section" id="listSection">
+  <div class="section-title">予約一覧</div>
+  <div id="bookingList">
+    <div class="loading-msg"><div class="spinner"></div>予約を読み込み中...</div>
+  </div>
+</div>
+
+<!-- 変更画面 -->
+<div class="section change-section" id="changeSection">
+  <div class="section-title">日時を変更</div>
+  <div class="cal-nav">
+    <button class="cal-btn" id="prevMonth">‹</button>
+    <div class="cal-month" id="calMonth"></div>
+    <button class="cal-btn" id="nextMonth">›</button>
+  </div>
+  <div class="cal-grid">
+    <div class="cal-dow">日</div><div class="cal-dow">月</div>
+    <div class="cal-dow">火</div><div class="cal-dow">水</div>
+    <div class="cal-dow">木</div><div class="cal-dow">金</div>
+    <div class="cal-dow">土</div>
+  </div>
+  <div class="cal-grid" id="calDays"></div>
+  <div class="slots-grid" id="slotsArea"></div>
+  <div class="error-msg" id="changeError"></div>
+  <button class="btn-primary" id="confirmChangeBtn" onclick="confirmChange()" disabled>この日時に変更する</button>
+  <button class="btn-back" onclick="showList()">← 戻る</button>
+</div>
+
+<!-- 完了画面 -->
+<div class="section" id="doneSection" style="display:none;">
+  <div class="success-wrap">
+    <div class="success-icon" id="doneIcon">✓</div>
+    <div class="success-title" id="doneTitle">完了しました</div>
+    <div class="success-sub" id="doneSub"></div>
+    <button class="btn-primary" onclick="showList()" style="margin-top:24px;">予約一覧に戻る</button>
+  </div>
+</div>
+
+<!-- キャンセル確認モーダル -->
+<div class="modal-overlay" id="cancelModal">
+  <div class="modal">
+    <div class="modal-title">予約をキャンセルしますか？</div>
+    <div class="modal-sub" id="cancelModalSub"></div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeModal()">戻る</button>
+      <button class="btn-modal-confirm" onclick="executeCancel()">キャンセルする</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CONFIG = {
+  GET_BOOKINGS_URL: 'https://tokawaka.app.n8n.cloud/webhook/get-bookings',
+  CANCEL_URL: 'https://tokawaka.app.n8n.cloud/webhook/cancel-booking',
+  RESCHEDULE_URL: 'https://tokawaka.app.n8n.cloud/webhook/reschedule-booking',
+  GET_SLOTS_URL: 'https://tokawaka.app.n8n.cloud/webhook/get-slots',
+  START_HOUR: 10,
+  END_HOUR: 22,
+  MAX_PER_SLOT: 3,
+};
+
+const LINE_USER_ID = new URLSearchParams(location.search).get('userId') || '';
+const DAYS_JP = ['日','月','火','水','木','金','土'];
+const MONTHS_JP = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+let state = {
+  bookings: [],
+  selectedBooking: null,
+  viewYear: new Date().getFullYear(),
+  viewMonth: new Date().getMonth(),
+  selectedDate: null,
+  selectedHour: null,
+  slotData: {},
+};
+
+function pad(n) { return String(n).padStart(2,'0'); }
+function formatDateJP(date) {
+  return `${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日（${DAYS_JP[date.getDay()]}）`;
+}
+
+// ---- 予約一覧取得 ----
+async function loadBookings() {
+  try {
+    const res = await fetch(`${CONFIG.GET_BOOKINGS_URL}?userId=${LINE_USER_ID}`);
+    const raw = await res.json();
+    const data = Array.isArray(raw) ? raw[0] : raw;
+    state.bookings = data.bookings || [];
+    renderBookings();
+  } catch(e) {
+    document.getElementById('bookingList').innerHTML =
+      '<div class="loading-msg">予約の取得に失敗しました。</div>';
+  }
+}
+
+function renderBookings() {
+  const list = document.getElementById('bookingList');
+  if (state.bookings.length === 0) {
+    list.innerHTML = '<div class="loading-msg">現在、予約はありません。</div>';
+    return;
+  }
+  list.innerHTML = state.bookings.map((b, i) => {
+    const start = b.startTime;
+    const month = parseInt(start.substring(5, 7));
+    const day = parseInt(start.substring(8, 10));
+    const hour = parseInt(start.substring(11, 13));
+    const dow = DAYS_JP[new Date(start).getDay()];
+    return `
+    <div class="booking-card">
+      <div class="booking-card-body">
+        <div class="booking-date">${month}月${day}日（${dow}）</div>
+        <div class="booking-time">${hour}:00 〜 ${hour+1}:00</div>
+        <div class="booking-actions">
+          <button class="btn-cancel" onclick="showCancelModal(${i})">キャンセル</button>
+          <button class="btn-change" onclick="showChange(${i})">変更</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ---- キャンセル ----
+function showCancelModal(index) {
+  state.selectedBooking = state.bookings[index];
+  const start = state.selectedBooking.startTime;
+  const month = parseInt(start.substring(5, 7));
+  const day = parseInt(start.substring(8, 10));
+  const hour = parseInt(start.substring(11, 13));
+  document.getElementById('cancelModalSub').textContent =
+    `${month}月${day}日 ${hour}:00〜${hour+1}:00 の予約をキャンセルします。`;
+  document.getElementById('cancelModal').classList.add('visible');
+}
+
+function closeModal() {
+  document.getElementById('cancelModal').classList.remove('visible');
+}
+
+async function executeCancel() {
+  closeModal();
+  try {
+    await fetch(CONFIG.CANCEL_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors',
+      body: JSON.stringify({
+        userId: LINE_USER_ID,
+        eventId: state.selectedBooking.eventId,
+      }),
+    });
+    const start = state.selectedBooking.startTime;
+    const month = parseInt(start.substring(5, 7));
+    const day = parseInt(start.substring(8, 10));
+    const hour = parseInt(start.substring(11, 13));
+    showDone('cancel', `${month}月${day}日 ${hour}:00〜${hour+1}:00 の予約をキャンセルしました。`);
+  } catch(e) {
+    alert('キャンセルに失敗しました。再度お試しください。');
+  }
+}
+
+// ---- 変更 ----
+function showChange(index) {
+  state.selectedBooking = state.bookings[index];
+  state.selectedDate = null;
+  state.selectedHour = null;
+  document.getElementById('listSection').style.display = 'none';
+  document.getElementById('changeSection').classList.add('visible');
+  document.getElementById('confirmChangeBtn').disabled = true;
+  renderCalendar();
+}
+
+function showList() {
+  document.getElementById('listSection').style.display = 'block';
+  document.getElementById('changeSection').classList.remove('visible');
+  document.getElementById('doneSection').style.display = 'none';
+  loadBookings();
+}
+
+// ---- カレンダー ----
+function renderCalendar() {
+  const { viewYear, viewMonth } = state;
+  document.getElementById('calMonth').textContent = `${viewYear}年 ${MONTHS_JP[viewMonth]}`;
+  const first = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  let html = '';
+  for (let i = 0; i < first; i++) html += '<div class="cal-day empty"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(viewYear, viewMonth, d);
+    const dow = date.getDay();
+    const isPast = date < today;
+    const isToday = date.getTime() === today.getTime();
+    const isSel = state.selectedDate && date.getTime() === state.selectedDate.getTime();
+    let cls = 'cal-day';
+    if (isPast) cls += ' past';
+    else if (dow === 0) cls += ' sun';
+    else if (dow === 6) cls += ' sat';
+    if (isToday) cls += ' today';
+    if (isSel) cls += ' selected';
+    const onclick = isPast ? '' : `onclick="selectDate(${viewYear},${viewMonth},${d})"`;
+    html += `<div class="${cls}" ${onclick}>${d}</div>`;
+  }
+  document.getElementById('calDays').innerHTML = html;
+}
+
+document.getElementById('prevMonth').onclick = () => {
+  if (state.viewMonth === 0) { state.viewYear--; state.viewMonth = 11; }
+  else state.viewMonth--;
+  renderCalendar();
+};
+document.getElementById('nextMonth').onclick = () => {
+  if (state.viewMonth === 11) { state.viewYear++; state.viewMonth = 0; }
+  else state.viewMonth++;
+  renderCalendar();
+};
+
+async function selectDate(y, m, d) {
+  state.selectedDate = new Date(y, m, d);
+  state.selectedHour = null;
+  document.getElementById('confirmChangeBtn').disabled = true;
+  renderCalendar();
+  const dateStr = `${y}-${pad(m+1)}-${pad(d)}`;
+  document.getElementById('slotsArea').innerHTML = '<div class="loading-msg"><div class="spinner"></div>空き状況確認中...</div>';
+  try {
+    const res = await fetch(`${CONFIG.GET_SLOTS_URL}?date=${dateStr}&userId=${LINE_USER_ID}`);
+    const raw = await res.json();
+    const data = Array.isArray(raw) ? raw[0] : raw;
+    if (data.closed) {
+      document.getElementById('slotsArea').innerHTML = '<div class="loading-msg">この日は休館日です。</div>';
+      return;
+    }
+    state.slotData = data;
+    renderSlots();
+  } catch(e) {
+    document.getElementById('slotsArea').innerHTML = '<div class="loading-msg">取得に失敗しました。</div>';
+  }
+}
+
+function renderSlots() {
+  const now = new Date();
+  const isToday = state.selectedDate.toDateString() === now.toDateString();
+  const currentHour = now.getHours();
+  let html = '<div class="slots-grid">';
+  for (let h = CONFIG.START_HOUR; h < CONFIG.END_HOUR; h++) {
+    if (isToday && h <= currentHour) continue;
+    const count = state.slotData[h] ?? 0;
+    const remaining = CONFIG.MAX_PER_SLOT - count;
+    const isSel = state.selectedHour === h;
+    html += `<div class="slot-row">
+      <div class="slot-time">${pad(h)}:00</div>`;
+    if (remaining <= 0) {
+      html += `<div class="slot-cell booked">満席</div>`;
+    } else {
+      html += `<div class="slot-cell available ${isSel ? 'selected-slot':''}" onclick="selectSlot(${h})">残り${remaining}枠</div>`;
+    }
+    html += `</div>`;
+  }
+  html += '</div>';
+  document.getElementById('slotsArea').innerHTML = html;
+}
+
+function selectSlot(hour) {
+  state.selectedHour = hour;
+  renderSlots();
+  document.getElementById('confirmChangeBtn').disabled = false;
+}
+
+async function confirmChange() {
+  const btn = document.getElementById('confirmChangeBtn');
+  btn.disabled = true;
+  btn.textContent = '処理中...';
+  const dateStr = `${state.selectedDate.getFullYear()}-${pad(state.selectedDate.getMonth()+1)}-${pad(state.selectedDate.getDate())}`;
+  try {
+    await fetch(CONFIG.RESCHEDULE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors',
+      body: JSON.stringify({
+        userId: LINE_USER_ID,
+        eventId: state.selectedBooking.eventId,
+        newStartTime: `${dateStr}T${pad(state.selectedHour)}:00:00+09:00`,
+        newEndTime: `${dateStr}T${pad(state.selectedHour+1)}:00:00+09:00`,
+        summary: state.selectedBooking.summary,
+      }),
+    });
+    const month = state.selectedDate.getMonth() + 1;
+    const day = state.selectedDate.getDate();
+    showDone('change', `${month}月${day}日 ${state.selectedHour}:00〜${state.selectedHour+1}:00 に変更しました。`);
+  } catch(e) {
+    document.getElementById('changeError').textContent = '変更に失敗しました。再度お試しください。';
+    document.getElementById('changeError').style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'この日時に変更する';
+  }
+}
+
+function showDone(type, message) {
+  document.getElementById('listSection').style.display = 'none';
+  document.getElementById('changeSection').classList.remove('visible');
+  document.getElementById('doneSection').style.display = 'block';
+  document.getElementById('doneIcon').textContent = type === 'cancel' ? '×' : '✓';
+  document.getElementById('doneIcon').style.background = type === 'cancel' ? '#c0392b' : '#2d6a4f';
+  document.getElementById('doneTitle').textContent = type === 'cancel' ? 'キャンセル完了' : '変更完了';
+  document.getElementById('doneSub').textContent = message;
+}
+
+// ---- 初期化 ----
+loadBookings();
+</script>
+</body>
+</html>
