@@ -533,6 +533,10 @@ let state = {
 // ---- Init: 会員情報を先に取得してからカレンダー表示 ----
 async function init() {
   try {
+    if (!CONFIG.LINE_USER_ID) {
+      showBlocked('LINEから開いてください', 'このページはLINEの\n「新規予約」ボタンから開いてください。');
+      return;
+    }
     if (CONFIG.LINE_USER_ID) {
       const res = await fetch(`${CONFIG.GET_USER_INFO_URL}?userId=${CONFIG.LINE_USER_ID}`);
       const raw = await res.json();
