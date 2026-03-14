@@ -482,12 +482,17 @@ function renderCalendar() {
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const today = new Date(); today.setHours(0,0,0,0);
 
+  // 来月末を最大予約可能日として計算
+  const maxDate = new Date(today.getFullYear(), today.getMonth() + 2, 0); // 来月の末日
+  maxDate.setHours(23,59,59,999);
+
   let html = '';
   for (let i = 0; i < first; i++) html += '<div class="cal-day empty"></div>';
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(viewYear, viewMonth, d);
     const dow = date.getDay();
     const isPast = date <= today; // 当日も選択不可
+    const isTooFar = date > maxDate; // 来月末より先は不可
     const isToday = date.getTime() === today.getTime();
     const isSel = state.selectedDate && date.getTime() === state.selectedDate.getTime();
     // その月の上限チェック
@@ -496,14 +501,14 @@ function renderCalendar() {
     const isLimitMonth = monthCount >= state.limit && state.limit > 0;
 
     let cls = 'cal-day';
-    if (isPast) cls += ' past';
+    if (isPast || isTooFar) cls += ' past';
     else if (isLimitMonth) cls += ' limit-month';
     else if (dow === 0) cls += ' sun';
     else if (dow === 6) cls += ' sat';
     if (isToday) cls += ' today';
     if (isSel) cls += ' selected';
 
-    const onclick = (isPast || isLimitMonth) ? '' : `onclick="selectDate(${viewYear},${viewMonth},${d})"`;
+    const onclick = (isPast || isTooFar || isLimitMonth) ? '' : `onclick="selectDate(${viewYear},${viewMonth},${d})"`;
     html += `<div class="${cls}" ${onclick}>${d}</div>`;
   }
   document.getElementById('calDays').innerHTML = html;
