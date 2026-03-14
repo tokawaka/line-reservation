@@ -552,6 +552,12 @@ async function loadSlots() {
       area.innerHTML = '<div class="loading-msg">この日は休館日です。<br>別の日付をお選びください。</div>';
       return;
     }
+    // すでに予約済みの日はブロック
+    if (data.userBookedHours && data.userBookedHours.length > 0) {
+      const h = data.userBookedHours[0];
+      area.innerHTML = `<div class="loading-msg">この日は${pad(h)}:00〜${pad(h+1)}:00 にすでにご予約があります。<br>別の日付をお選びください。</div>`;
+      return;
+    }
     state.slotData = data;
     renderSlots();
   } catch(e) {
