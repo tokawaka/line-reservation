@@ -408,6 +408,8 @@ let state = {
   slotData: {},
   userName: '',
   thisMonthLimitReached: false,
+  limit: 0,
+  monthlyCountMap: {},
 };
 
 // ---- Init ----
@@ -423,6 +425,8 @@ async function init() {
     const data = Array.isArray(raw) ? raw[0] : raw;
 
     state.userName = data.name || '';
+    state.limit = data.limit || 0;
+    state.monthlyCountMap = data.monthlyCountMap || {};
     document.getElementById('memberName').textContent = data.name || '';
 
     const status = data.status || '';
@@ -477,8 +481,6 @@ function renderCalendar() {
   const first = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const today = new Date(); today.setHours(0,0,0,0);
-  const nowMonth = new Date(); nowMonth.setDate(1); nowMonth.setHours(0,0,0,0);
-  const isCurrentMonth = viewYear === today.getFullYear() && viewMonth === today.getMonth();
 
   let html = '';
   for (let i = 0; i < first; i++) html += '<div class="cal-day empty"></div>';
@@ -488,8 +490,10 @@ function renderCalendar() {
     const isPast = date <= today; // 当日も選択不可
     const isToday = date.getTime() === today.getTime();
     const isSel = state.selectedDate && date.getTime() === state.selectedDate.getTime();
-    // 今月上限到達かつ今月の日付はクリック不可
-    const isLimitMonth = state.thisMonthLimitReached && isCurrentMonth;
+    // その月の上限チェック
+    const monthStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
+    const monthCount = state.monthlyCountMap[monthStr] || 0;
+    const isLimitMonth = monthCount >= state.limit && state.limit > 0;
 
     let cls = 'cal-day';
     if (isPast) cls += ' past';
@@ -617,6 +621,15 @@ async function submitBooking() {
     // 二重予約チェック
     if (result.error === 'duplicate') {
       errEl.textContent = 'その日時はすでにご予約済みです。別の日時をお選びください。';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = '予約を確定する';
+      return;
+    }
+
+    // 月間上限チェック
+    if (result.error === 'monthly_limit') {
+      errEl.textContent = 'その月の予約上限に達しています。別の月をお選びください。';
       errEl.style.display = 'block';
       btn.disabled = false;
       btn.textContent = '予約を確定する';
