@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理者ページ</title>
+<style>
+  :root {
+    --ink: #1a1a18;
+    --paper: #f5f0e8;
+    --accent: #c8602a;
+    --muted: #9a9080;
+    --line: #d4ccc0;
+    --card: #fffdf8;
+    --success: #2d6a4f;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Meiryo', 'メイリオ', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  .header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 28px 24px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 120px; height: 100%;
+    background: var(--accent);
+    clip-path: polygon(30% 0, 100% 0, 100% 100%, 0% 100%);
+    opacity: 0.15;
+  }
+  .header-label { font-size: 10px; letter-spacing: 0.3em; color: var(--accent); text-transform: uppercase; margin-bottom: 6px; }
+  .header h1 { font-size: 22px; font-weight: 300; letter-spacing: 0.08em; }
+  .header-sub { font-size: 11px; color: var(--muted); margin-top: 8px; letter-spacing: 0.1em; }
+
+  .section { padding: 24px; }
+  .section-title {
+    font-size: 13px; font-weight: 300; letter-spacing: 0.15em;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+  /* カレンダー */
+  .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .cal-month { font-size: 16px; font-weight: 400; letter-spacing: 0.1em; }
+  .cal-btn {
+    width: 36px; height: 36px;
+    border: 1px solid var(--line); background: var(--card);
+    border-radius: 4px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; transition: all 0.2s; color: var(--ink);
+  }
+  .cal-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-dow { text-align: center; font-size: 10px; color: var(--muted); padding: 6px 0; letter-spacing: 0.05em; }
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; border-radius: 4px; cursor: pointer;
+    transition: all 0.2s; border: 1px solid transparent; font-weight: 300;
+    position: relative;
+  }
+  .cal-day:hover:not(.empty):not(.past) { background: var(--paper); border-color: var(--accent); color: var(--accent); }
+  .cal-day.empty { cursor: default; }
+  .cal-day.past { color: var(--line); cursor: not-allowed; }
+  .cal-day.today { font-weight: 600; color: var(--accent); }
+  .cal-day.sun { color: #c0392b; }
+  .cal-day.sat { color: #2980b9; }
+  .cal-day.selected {
+    background: var(--accent) !important;
+    color: white !important;
+    border-color: var(--accent);
+  }
+  .cal-day.selected::after {
+    content: '休';
+    position: absolute;
+    bottom: 2px;
+    font-size: 8px;
+    opacity: 0.8;
+  }
+
+  /* 選択済みリスト */
+  .selected-list {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+    min-height: 60px;
+  }
+  .selected-empty { font-size: 13px; color: var(--muted); }
+  .selected-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .selected-tag {
+    background: var(--accent);
+    color: white;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    display: flex; align-items: center; gap: 6px;
+    cursor: pointer;
+  }
+  .selected-tag .remove { font-size: 14px; opacity: 0.8; }
+
+  .btn-primary {
+    width: 100%; padding: 16px;
+    background: var(--accent); color: var(--paper);
+    border: none; border-radius: 6px;
+    font-family: 'Meiryo', 'メイリオ', sans-serif;
+    font-size: 14px; letter-spacing: 0.15em;
+    cursor: pointer; transition: all 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary::after { content: '→'; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 16px; }
+
+  .btn-secondary {
+    width: 100%; padding: 12px; margin-top: 12px;
+    background: transparent; color: var(--muted);
+    border: 1px solid var(--line); border-radius: 6px;
+    font-family: 'Meiryo', 'メイリオ', sans-serif;
+    font-size: 13px; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-secondary:hover { color: var(--ink); border-color: var(--ink); }
+
+  /* 確認画面 */
+  .confirm-card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+  .confirm-card-header { background: var(--accent); color: var(--paper); padding: 14px 18px; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; }
+  .confirm-list { padding: 16px 18px; }
+  .confirm-list-item { font-size: 14px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .confirm-list-item:last-child { border-bottom: none; }
+
+  /* 完了画面 */
+  .success-wrap { text-align: center; padding: 40px 0; }
+  .success-icon {
+    width: 64px; height: 64px; background: var(--success);
+    border-radius: 50%; margin: 0 auto 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; color: white;
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .success-title { font-size: 20px; font-weight: 300; letter-spacing: 0.1em; margin-bottom: 24px; }
+
+  /* コピーエリア */
+  .copy-area {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 18px;
+    margin-bottom: 16px;
+    text-align: left;
+  }
+  .copy-area-label { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 10px; }
+  .copy-text {
+    font-size: 13px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    color: var(--ink);
+  }
+  .btn-copy {
+    width: 100%; padding: 12px;
+    background: var(--ink); color: var(--paper);
+    border: none; border-radius: 6px;
+    font-family: 'Meiryo', 'メイリオ', sans-serif;
+    font-size: 13px; letter-spacing: 0.1em;
+    cursor: pointer; transition: all 0.2s;
+    margin-bottom: 12px;
+  }
+  .btn-copy:hover { background: var(--success); }
+  .btn-copy.copied { background: var(--success); }
+
+  .spinner { width: 24px; height: 24px; border: 2px solid var(--line); border-top-color: var(--ink); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-msg { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
+
+  .error-msg { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 6px; padding: 12px 16px; font-size: 12px; color: #991b1b; margin-bottom: 16px; display: none; }
+
+  /* セクション表示切替 */
+  .view { display: none; }
+  .view.visible { display: block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">Admin</div>
+  <h1>休館日登録</h1>
+  <div class="header-sub">休館日をカレンダーから選択して一括登録</div>
+</div>
+
+<!-- Step 1: 日付選択 -->
+<div class="view visible" id="view1">
+  <div class="section">
+    <div class="section-title">休館日を選択</div>
+
+    <div class="cal-nav">
+      <button class="cal-btn" id="prevMonth">‹</button>
+      <div class="cal-month" id="calMonth"></div>
+      <button class="cal-btn" id="nextMonth">›</button>
+    </div>
+    <div class="cal-grid">
+      <div class="cal-dow">日</div><div class="cal-dow">月</div><div class="cal-dow">火</div>
+      <div class="cal-dow">水</div><div class="cal-dow">木</div><div class="cal-dow">金</div><div class="cal-dow">土</div>
+    </div>
+    <div class="cal-grid" id="calDays"></div>
+
+    <div style="margin-top: 24px;">
+      <div class="section-title">選択中の休館日</div>
+      <div class="selected-list" id="selectedList">
+        <div class="selected-empty" id="selectedEmpty">日付を選択してください</div>
+        <div class="selected-tags" id="selectedTags"></div>
+      </div>
+    </div>
+
+    <div class="error-msg" id="errorMsg1">日付を1つ以上選択してください。</div>
+    <button class="btn-primary" onclick="goConfirm()">確認画面へ</button>
+  </div>
+</div>
+
+<!-- Step 2: 確認 -->
+<div class="view" id="view2">
+  <div class="section">
+    <div class="section-title">登録内容の確認</div>
+    <div class="confirm-card">
+      <div class="confirm-card-header">休館日一覧</div>
+      <div class="confirm-list" id="confirmList"></div>
+    </div>
+    <div class="error-msg" id="errorMsg2"></div>
+    <button class="btn-primary" id="registerBtn" onclick="submitHolidays()">登録する</button>
+    <button class="btn-secondary" onclick="goBack()">← 選択画面に戻る</button>
+  </div>
+</div>
+
+<!-- Step 3: 完了 -->
+<div class="view" id="view3">
+  <div class="section">
+    <div class="success-wrap">
+      <div class="success-icon">✓</div>
+      <div class="success-title">登録が完了しました</div>
+    </div>
+
+    <div class="copy-area">
+      <div class="copy-area-label">LINE送信用テキスト（タップでコピー）</div>
+      <div class="copy-text" id="copyText"></div>
+    </div>
+    <button class="btn-copy" id="copyBtn" onclick="copyText()">📋 コピーする</button>
+    <button class="btn-secondary" onclick="reset()">← 最初に戻る</button>
+  </div>
+</div>
+
+<script>
+const CONFIG = {
+  REGISTER_HOLIDAYS_URL: 'https://tokawaka.app.n8n.cloud/webhook/register-holidays',
+};
+
+const DAYS_JP = ['日','月','火','水','木','金','土'];
+const MONTHS_JP = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+let state = {
+  viewYear: new Date().getFullYear(),
+  viewMonth: new Date().getMonth(),
+  selectedDates: [], // "YYYY-MM-DD" の配列
+};
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function formatDateJP(dateStr) {
+  const date = new Date(dateStr + 'T00:00:00+09:00');
+  const m = date.getMonth() + 1;
+  const d = date.getDate();
+  const dow = DAYS_JP[date.getDay()];
+  return `${m}月${d}日（${dow}）`;
+}
+
+// ---- カレンダー ----
+function renderCalendar() {
+  const { viewYear, viewMonth } = state;
+  document.getElementById('calMonth').textContent = `${viewYear}年 ${MONTHS_JP[viewMonth]}`;
+
+  const first = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  let html = '';
+  for (let i = 0; i < first; i++) html += '<div class="cal-day empty"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(viewYear, viewMonth, d);
+    const dow = date.getDay();
+    const isPast = date < today;
+    const isToday = date.getTime() === today.getTime();
+    const dateStr = `${viewYear}-${pad(viewMonth+1)}-${pad(d)}`;
+    const isSel = state.selectedDates.includes(dateStr);
+
+    let cls = 'cal-day';
+    if (isPast) cls += ' past';
+    else if (dow === 0) cls += ' sun';
+    else if (dow === 6) cls += ' sat';
+    if (isToday) cls += ' today';
+    if (isSel) cls += ' selected';
+
+    const onclick = isPast ? '' : `onclick="toggleDate('${dateStr}')"`;
+    html += `<div class="${cls}" ${onclick}>${d}</div>`;
+  }
+  document.getElementById('calDays').innerHTML = html;
+}
+
+document.getElementById('prevMonth').onclick = () => {
+  if (state.viewMonth === 0) { state.viewYear--; state.viewMonth = 11; } else state.viewMonth--;
+  renderCalendar();
+};
+document.getElementById('nextMonth').onclick = () => {
+  if (state.viewMonth === 11) { state.viewYear++; state.viewMonth = 0; } else state.viewMonth++;
+  renderCalendar();
+};
+
+function toggleDate(dateStr) {
+  const idx = state.selectedDates.indexOf(dateStr);
+  if (idx >= 0) {
+    state.selectedDates.splice(idx, 1);
+  } else {
+    state.selectedDates.push(dateStr);
+    state.selectedDates.sort();
+  }
+  renderCalendar();
+  renderSelectedTags();
+}
+
+function removeDate(dateStr) {
+  state.selectedDates = state.selectedDates.filter(d => d !== dateStr);
+  renderCalendar();
+  renderSelectedTags();
+}
+
+function renderSelectedTags() {
+  const empty = document.getElementById('selectedEmpty');
+  const tags = document.getElementById('selectedTags');
+  if (state.selectedDates.length === 0) {
+    empty.style.display = 'block';
+    tags.innerHTML = '';
+  } else {
+    empty.style.display = 'none';
+    tags.innerHTML = state.selectedDates.map(d =>
+      `<div class="selected-tag" onclick="removeDate('${d}')">
+        ${formatDateJP(d)} <span class="remove">×</span>
+      </div>`
+    ).join('');
+  }
+}
+
+// ---- 確認画面 ----
+function goConfirm() {
+  if (state.selectedDates.length === 0) {
+    document.getElementById('errorMsg1').style.display = 'block';
+    return;
+  }
+  document.getElementById('errorMsg1').style.display = 'none';
+  document.getElementById('confirmList').innerHTML = state.selectedDates.map(d =>
+    `<div class="confirm-list-item">📅 ${formatDateJP(d)}</div>`
+  ).join('');
+  showView('view2');
+}
+
+function goBack() {
+  showView('view1');
+}
+
+// ---- 登録 ----
+async function submitHolidays() {
+  const errEl = document.getElementById('errorMsg2');
+  errEl.style.display = 'none';
+  const btn = document.getElementById('registerBtn');
+  btn.disabled = true;
+  btn.textContent = '登録中...';
+
+  try {
+    await fetch(CONFIG.REGISTER_HOLIDAYS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dates: state.selectedDates }),
+    });
+
+    // コピー用テキスト生成
+    const dateLines = state.selectedDates.map(d => `・${formatDateJP(d)}`).join('\n');
+    const now = new Date();
+    const nextMonth = now.getMonth() + 2;
+    const nextMonthName = nextMonth > 12 ? `${now.getFullYear()+1}年1月` : `${now.getFullYear()}年${nextMonth}月`;
+
+    document.getElementById('copyText').textContent =
+      `お世話になっております。\n${nextMonthName}の休館日は以下の通りです。\n\n${dateLines}\n\nどうぞよろしくお願いいたします。`;
+
+    showView('view3');
+  } catch(e) {
+    errEl.textContent = '登録に失敗しました。再度お試しください。';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '登録する';
+  }
+}
+
+// ---- コピー ----
+function copyText() {
+  const text = document.getElementById('copyText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✅ コピーしました';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 コピーする';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+// ---- リセット ----
+function reset() {
+  state.selectedDates = [];
+  state.viewYear = new Date().getFullYear();
+  state.viewMonth = new Date().getMonth();
+  renderCalendar();
+  renderSelectedTags();
+  document.getElementById('registerBtn').disabled = false;
+  document.getElementById('registerBtn').textContent = '登録する';
+  showView('view1');
+}
+
+// ---- ビュー切替 ----
+function showView(id) {
+  ['view1','view2','view3'].forEach(v => {
+    document.getElementById(v).classList.toggle('visible', v === id);
+  });
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ---- 初期化 ----
+renderCalendar();
+</script>
+</body>
+</html>
